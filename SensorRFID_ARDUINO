@@ -1,0 +1,66 @@
+include <RFIDReader.h>
+
+char ssid[] = "bandtec";  
+char password[] = ""; 
+int status = WL_IDLE_STATUS;
+WiFiClient client;
+
+char server[] = "localhost.com"; 
+
+
+//String yourdatacolumn = "yourdata=";
+String dataColumnId = "id_usuario=";
+String dataColumnEstacao =  "id_estacao=";
+
+void setup()
+{
+  RFIDReader.begin();
+  connectWifi();
+  //pinMode(13, OUTPUT);
+}
+
+void loop()
+{
+  
+  if (RFIDReader.process() == true) {
+    Serial.println(RFIDReader.id);
+    postData(RFIDReader.id);
+  }
+  
+}
+
+void connectWifi() {
+  // Attempt to connect to wifi network
+  while ( status != WL_CONNECTED) {
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
+    status = WiFi.begin(ssid, password);
+    // Wait 10 seconds for connection
+    delay(10000);
+  }
+}
+
+void postData(String RFID) {
+  yourdata = "{ id_usuario : " + RFID +  ", id_estacao = 1 }";
+  
+
+  if (client.connect(server, 80)) {
+    Serial.println("connecting...");
+
+    
+    client.println("POST /AcessoDeficiente/add HTTP/1.1");
+    client.println("Host: localhost");
+    client.println("User-Agent: Arduino/1.0");
+    client.println("Connection: close");
+    client.println("Content-Type: application/x-www-form-urlencoded;");
+    client.print("Content-Length: ");
+    client.println(yourdata.length());
+    client.println();
+    client.println(yourdata); 
+  } 
+  else {
+    Serial.println("Connection failed");
+    Serial.println("Disconnecting.");
+    client.stop();
+  }
+}
