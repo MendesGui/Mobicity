@@ -1,0 +1,96 @@
+#include <SoftwareSerial.h>
+#include <SparkFunESP8266WiFi.h>
+
+const char mySSID[] = "BANDWIFI";
+const char myPSK[] = "";
+
+const String server = "mobicity.herokuapp.com";
+String httpHeader = "POST /entrada/add/ HTTP/1.1\r\n"
+                    "Host: mobicity.herokuapp.com\r\n"
+                    "Connection: close\r\n"
+                    "Content-Type: application/x-www-form-urlencoded\r\n";
+
+void setup()
+{
+  int status;
+  Serial.begin(9600);
+  
+  status = esp8266.begin();
+  if (status <= 0)
+  {
+    Serial.println(F("Unable to communicate with shield. Looping"));
+    while(1) ;
+  }
+  
+  esp8266.setMode(ESP8266_MODE_STA); // Set WiFi mode to station
+  if (esp8266.status() <= 0) // If we're not already connected
+  {
+    if (esp8266.connect(mySSID, myPSK) < 0)
+    {
+      Serial.println(F("Error connecting"));
+      while (1) ;
+    }    
+  }
+  
+  // Get our assigned IP address and print it:
+  Serial.print(F("My IP address is: "));
+  Serial.println(esp8266.localIP());
+}
+
+void loop()
+{
+  Serial.println(F("Press any key to post!"));
+  // If a character has been received over serial:
+  while (!Serial.available()) {
+    ;
+  }
+  // !!! Make sure we haven't posted recently
+  // Post to Phant!
+  doPost();
+  // Then clear the serial buffer:
+  while (Serial.available())
+    Serial.read();
+}
+
+void doPost()
+{
+  // Create a client, and initiate a connection
+  ESP8266Client client;
+  
+  if (client.connect(server, 80) <= 0)
+  {
+    Serial.println(F("Failed to connect to server."));
+    return;
+  }
+  Serial.println(F("Connected."));
+  
+  Serial.println(F("Posting!"));
+
+  int idUsuario = 1;
+  int idEstacao = 1;
+  
+  String content = "usuario_id_usuario=";
+  content += idUsuario;
+  content += "&estacao_id_estacao=";
+  content += idEstacao;
+  
+  client.print(httpHeader);
+  client.print("Content-Length: ");
+  client.print(content.length());
+  client.print("\r\n\r\n");
+  client.print(content);
+  delay(10000);
+  Serial.println(F("Posted!"));
+
+  // available() will return the number of characters
+  // currently in the receive buffer.
+  while (client.available())
+    Serial.write(client.read()); // read() gets the FIFO char
+  
+  Serial.println(F("Finished!"));
+  
+  // connected() is a boolean return value - 1 if the 
+  // connection is active, 0 if it's closed.
+  if (client.connected())
+    client.stop(); // stop() closes a TCP connection.
+}
