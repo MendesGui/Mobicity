@@ -1,0 +1,30 @@
+#include <RFIDReader.h>
+
+void setup()
+{
+  RFIDReader.begin();
+  pinMode(13, OUTPUT);
+}
+
+void loop()
+{
+  
+  if (RFIDReader.process() == true) {
+    Serial.println(RFIDReader.id);
+    if (RFIDReader.id == "1F007476716C") {
+      //Valid!
+      for (int i = 0; i < 10; i = i + 1) {
+      digitalWrite(13, 1);
+      delay(100);
+      digitalWrite(13, 0);
+      delay(100);
+      }
+    } else {
+      //Invalid!
+      digitalWrite(13, 1);
+      delay(1000);
+      digitalWrite(13, 0);
+    }
+  }
+  
+}
